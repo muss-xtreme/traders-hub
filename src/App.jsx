@@ -16,6 +16,11 @@ import { Charts, Tutorials } from './pages/Info.jsx';
 
 const BotBuilder = lazy(() => import('./pages/BotBuilder.jsx'));
 
+// Served from a sub-path on GitHub Pages (e.g. /traders-hub/); "/" in local dev.
+const BASE = import.meta.env.BASE_URL;
+const APP_PATH = `${BASE}app`;
+const isAppPath = () => window.location.pathname.startsWith(APP_PATH);
+
 const TABS = [
   { id: 'free_bots', label: 'Free Bots', icon: '▦', Page: FreeBots },
   { id: 'bulk_trader', label: 'Bulk Trader', icon: '◈', Page: BulkTrader },
@@ -91,19 +96,19 @@ function Shell({ onHome }) {
 }
 
 export default function App() {
-  const [inApp, setInApp] = useState(() => window.location.pathname.startsWith('/app'));
+  const [inApp, setInApp] = useState(isAppPath);
 
   useEffect(() => {
-    const onPop = () => setInApp(window.location.pathname.startsWith('/app'));
+    const onPop = () => setInApp(isAppPath());
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
 
-  const go = (path) => { window.history.pushState({}, '', path); setInApp(path.startsWith('/app')); };
+  const go = (path) => { window.history.pushState({}, '', path); setInApp(path.startsWith(APP_PATH)); };
 
   return (
     <SessionProvider>
-      {inApp ? <Shell onHome={() => go('/')} /> : <Landing onEnter={() => go('/app#free_bots')} />}
+      {inApp ? <Shell onHome={() => go(BASE)} /> : <Landing onEnter={() => go(`${APP_PATH}#free_bots`)} />}
     </SessionProvider>
   );
 }

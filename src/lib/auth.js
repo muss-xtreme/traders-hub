@@ -7,7 +7,7 @@ const VERIFIER_KEY = 'th.oauth.verifier';
 const STATE_KEY = 'th.oauth.state';
 
 export const oauthEnabled = () => Boolean(CLIENT_ID);
-const redirectUri = () => `${window.location.origin}/app`;
+const redirectUri = () => `${window.location.origin}${import.meta.env.BASE_URL}app`;
 
 const b64url = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const randomString = () => b64url(crypto.getRandomValues(new Uint8Array(32)));
