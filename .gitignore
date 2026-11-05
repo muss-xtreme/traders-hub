@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+.claude/
+
+# Third-party material captured during reverse engineering — kept locally, never published.
+research/mirror/
+research/pretty/
+research/rea/
+research/shots/
