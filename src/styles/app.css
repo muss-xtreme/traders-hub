@@ -416,6 +416,19 @@ h1, h2, h3 { margin: 0; }
 .pa-trade .input { background: rgba(40, 52, 170, 0.6); color: #fff; border-color: rgba(140, 160, 255, 0.35); }
 .pa-btn { flex: 1; min-width: 120px; padding: 10px; border-radius: 12px; border: 0; color: #fff; font-weight: 800; background: linear-gradient(90deg, #6366f1, #2563eb); }
 .pa-btn small { display: block; font-weight: 600; font-size: 11px; opacity: 0.85; }
+.pa-suggest { margin-top: 12px; padding: 12px; border-radius: 14px; background: rgba(15, 23, 90, 0.6); border: 1px solid rgba(240, 171, 252, 0.35); display: grid; gap: 10px; }
+.pa-suggest__head { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+.pa-suggest__digit { text-align: center; min-width: 96px; padding: 6px 10px; border-radius: 12px; background: linear-gradient(160deg, #7c3aed, #4f46e5); }
+.pa-suggest__digit small { display: block; font-size: 10px; color: #e9d5ff; }
+.pa-suggest__digit b { font-size: 28px; line-height: 1; }
+.pa-suggest__row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pa-mini { padding: 7px 14px; border-radius: 10px; border: 1px solid rgba(140, 160, 255, 0.45); background: rgba(40, 52, 170, 0.6); color: #fff; font-weight: 700; }
+.pa-odds { font-size: 12px; color: #fde68a; }
+.pa-suggest__auto { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; }
+.pa-suggest__auto label { display: flex; gap: 6px; align-items: center; }
+.pa-suggest__auto .input { width: 70px; min-width: 0; background: rgba(40, 52, 170, 0.6); color: #fff; border-color: rgba(140, 160, 255, 0.35); }
+.pa-run { width: 100%; }
+.pa-session { margin: 0; }
 .pa-result { margin: 10px 0 0; text-align: center; font-weight: 700; }
 .pa-result.is-won { color: #86efac; } .pa-result.is-lost { color: #fca5a5; }
 .pa-bars { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; align-items: end; }

@@ -2,7 +2,7 @@
 // Every number comes from real Deriv ticks. The analysis panel reports what the data
 // actually shows and the contract's true odds; it does not invent predictions.
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { MARKETS, marketBySymbol, contractInfo } from '../lib/markets.js';
 import { useSession, useTicks } from '../lib/session.jsx';
 import { ledger, placeContract } from '../lib/trader.js';
@@ -18,6 +18,21 @@ const WINDOWS = [100, 200, 500, 1000];
 
 const band = (p) => (p > 12 ? 'high' : p >= 8 ? 'mid' : 'low');
 
+const RULES = [
+  { id: 'hot', label: 'Most frequent digit' },
+  { id: 'cold', label: 'Least frequent digit' },
+  { id: 'repeat', label: 'Repeat last digit' },
+];
+
+/** Digit suggested by a simple rule over the live tick window (no hidden scoring). */
+function suggestDigit(buffer, rule) {
+  if (!buffer.length) return null;
+  if (rule === 'repeat') return buffer.last.digit;
+  const c = buffer.counts;
+  const target = rule === 'hot' ? Math.max(...c) : Math.min(...c);
+  return c.indexOf(target);
+}
+
 function LiveDashboard({ symbol, windowSize, strategy }) {
   const { account, confirmTrading } = useSession();
   const { buffer, loading, error, decimals } = useTicks(symbol, windowSize);
@@ -25,7 +40,13 @@ function LiveDashboard({ symbol, windowSize, strategy }) {
   const [stake, setStake] = useState(1);
   const [busy, setBusy] = useState(false);
   const [lastTrade, setLastTrade] = useState(null);
+  const [rule, setRule] = useState('hot');
+  const [auto, setAuto] = useState({ maxTrades: 5, tp: 20, sl: 10 });
+  const [session, setSession] = useState(null);   // {trades, wins, pnl, running}
+  const stopRef = useRef(false);
+  const [notice, setNotice] = useState(null);
 
+  const suggested = suggestDigit(buffer, rule);
   const pct = buffer.percentages();
   const counts = buffer.counts;
   const eo = buffer.evenOdd();
@@ -59,16 +80,56 @@ function LiveDashboard({ symbol, windowSize, strategy }) {
     const info = contractInfo(contract);
     const label = `${info.label}${info.barrier ? ` ${digit}` : ''}`;
     const ok = await confirmTrading(`Buy 1 × ${label} on ${marketBySymbol(symbol).label}, stake ${money(stake)}, 1 tick.`)
-      .catch((e) => { ledger.log(e.message, 'error'); return false; });
+      .catch((e) => { ledger.log(e.message, 'error'); setNotice(e.message); return false; });
     if (!ok) return;
+    setNotice(null);
     setBusy(true);
     try {
       const r = await placeContract({ symbol, contract, stake, duration: 1, barrier: digit, currency: account?.currency ?? 'USD' }, { source: 'pro analysis' });
       setLastTrade(r);
     } catch (e) {
       ledger.log(`Trade failed: ${e.message}`, 'error');
+      setNotice(`Trade failed: ${e.message}`);
     } finally { setBusy(false); }
   };
+
+  // Matches loop: before every trade, take the rule's current digit and buy Matches on it.
+  const runMatches = async () => {
+    const ruleLabel = RULES.find((r) => r.id === rule).label.toLowerCase();
+    const ok = await confirmTrading(
+      `Auto-buy up to ${auto.maxTrades} × Matches (${ruleLabel}) on ${marketBySymbol(symbol).label}, stake ${money(stake)} each. `
+      + `Each Matches contract wins about 10% of the time. Stops at +${auto.tp} profit or −${auto.sl} loss.`,
+    ).catch((e) => { ledger.log(e.message, 'error'); setNotice(e.message); return false; });
+    if (!ok) return;
+    setNotice(null);
+    stopRef.current = false;
+    let trades = 0; let wins = 0; let pnl = 0;
+    setSession({ trades, wins, pnl, running: true });
+    setBusy(true);
+    ledger.setRunning({ source: 'pro analysis', symbol });
+    try {
+      while (!stopRef.current && trades < auto.maxTrades) {
+        const d = suggestDigit(buffer, rule);
+        if (d == null) break;
+        setDigit(d);
+        const r = await placeContract({ symbol, contract: 'DIGITMATCH', stake, duration: 1, barrier: d, currency: account?.currency ?? 'USD' }, { source: 'pro analysis' });
+        trades += 1; pnl += r.profit; if (r.profit > 0) wins += 1;
+        setLastTrade(r);
+        setSession({ trades, wins, pnl, running: true });
+        if (pnl >= auto.tp) { ledger.log(`Matches run: take profit ${auto.tp} reached`, 'success'); break; }
+        if (pnl <= -Math.abs(auto.sl)) { ledger.log(`Matches run: stop loss ${auto.sl} reached`, 'error'); break; }
+      }
+    } catch (e) {
+      ledger.log(`Matches run stopped: ${e.message}`, 'error');
+      setNotice(`Matches run stopped: ${e.message}`);
+    } finally {
+      setSession({ trades, wins, pnl, running: false });
+      setBusy(false);
+      ledger.setRunning(null);
+    }
+  };
+
+  const copyDigit = () => { if (suggested != null) navigator.clipboard?.writeText(String(suggested)).catch(() => {}); };
 
   return (
     <>
@@ -114,7 +175,35 @@ function LiveDashboard({ symbol, windowSize, strategy }) {
           <p>• Distribution check (χ² = {test.chi2.toFixed(1)}, 9 df): {describeP(test.p)}.</p>
           <p className="pa-note">No prediction is shown because the data cannot support one: Deriv's volatility digits are generated independently, so past frequencies do not change the next digit's odds.</p>
         </div>
-        {strat.digit && <p className="pa-sub">Tap a digit above to choose the {strategy === 'over_under' ? 'barrier' : 'prediction'}.</p>}
+        {strategy === 'matches_differs' && (
+          <div className="pa-suggest">
+            <div className="pa-suggest__head">
+              <select className="pa-select" value={rule} onChange={(e) => setRule(e.target.value)} disabled={session?.running}>
+                {RULES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+              </select>
+              <div className="pa-suggest__digit"><small>Suggested digit</small><b>{suggested ?? '—'}</b></div>
+            </div>
+            <div className="pa-suggest__row">
+              <button type="button" className="pa-mini" disabled={suggested == null || session?.running} onClick={() => setDigit(suggested)}>Use it</button>
+              <button type="button" className="pa-mini" disabled={suggested == null} onClick={copyDigit}>Copy</button>
+              <span className="pa-odds">Matches {suggested ?? ''} wins ~10% · pays ~9× stake</span>
+            </div>
+            <div className="pa-suggest__auto">
+              <label>Trades <input className="input input--sm" type="number" min={1} max={100} value={auto.maxTrades} disabled={session?.running} onChange={(e) => setAuto({ ...auto, maxTrades: Number(e.target.value) })} /></label>
+              <label>Take profit <input className="input input--sm" type="number" min={0} value={auto.tp} disabled={session?.running} onChange={(e) => setAuto({ ...auto, tp: Number(e.target.value) })} /></label>
+              <label>Stop loss <input className="input input--sm" type="number" min={0} value={auto.sl} disabled={session?.running} onChange={(e) => setAuto({ ...auto, sl: Number(e.target.value) })} /></label>
+            </div>
+            {session?.running
+              ? <button type="button" className="pa-stop pa-run" onClick={() => { stopRef.current = true; }}>□ Stop after this trade</button>
+              : <button type="button" className="pa-start pa-run" disabled={busy || suggested == null} onClick={runMatches}>▷ Run Matches on suggested digit</button>}
+            {session && (
+              <p className="pa-sub pa-session">
+                {session.trades} trades · {session.wins} won · P/L <b className={session.pnl >= 0 ? 'pos' : 'neg'}>{money(session.pnl)}</b>
+              </p>
+            )}
+          </div>
+        )}
+        {strat.digit && <p className="pa-sub">Tap a digit above to choose the {strategy === 'over_under' ? 'barrier' : 'prediction'} for single trades.</p>}
         <div className="pa-trade">
           <label>Stake <input className="input input--sm" type="number" min={0.35} step={0.05} value={stake} onChange={(e) => setStake(Number(e.target.value))} /></label>
           {strat.contracts.map((c) => {
@@ -127,6 +216,7 @@ function LiveDashboard({ symbol, windowSize, strategy }) {
             );
           })}
         </div>
+        {notice && <p className="pa-error">{notice}</p>}
         {lastTrade && (
           <p className={`pa-result ${lastTrade.profit > 0 ? 'is-won' : 'is-lost'}`}>
             Last trade: {lastTrade.label} {lastTrade.profit > 0 ? 'won' : 'lost'} {money(lastTrade.profit)}
