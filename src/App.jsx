@@ -1,7 +1,7 @@
 // Routing: "/" → landing splash, "/app#<tab>" → trading shell with tab nav, run panel,
 // floating scanner and trade-confirmation modal.
 
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { SessionProvider, useSession } from './lib/session.jsx';
 import { Header, ConfirmTradingModal } from './components/Header.jsx';
 import { RunPanel } from './components/RunPanel.jsx';
@@ -61,10 +61,33 @@ function Clock() {
   );
 }
 
+const MOBILE_QUERY = '(max-width: 1000px)';
+
+function useIsMobile() {
+  const [mobile, setMobile] = useState(() => window.matchMedia(MOBILE_QUERY).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_QUERY);
+    const onChange = () => setMobile(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return mobile;
+}
+
 function Shell({ onHome }) {
+  const mobile = useIsMobile();
   const [tab, setTab] = useState(tabFromHash);
-  const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [panelCollapsed, setPanelCollapsed] = useState(mobile);
   const [booting, setBooting] = useState(true);
+  const tabsRef = useRef(null);
+
+  // Phones start with the run panel folded into its bottom bar.
+  useEffect(() => { setPanelCollapsed(mobile); }, [mobile]);
+
+  // Keep the active tab visible in the horizontally scrolling nav.
+  useEffect(() => {
+    tabsRef.current?.querySelector('.tab.is-active')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }, [tab]);
 
   useEffect(() => {
     const onHash = () => setTab(tabFromHash());
@@ -76,9 +99,9 @@ function Shell({ onHome }) {
   const { Page } = TABS.find((t) => t.id === tab);
 
   return (
-    <div className={`shell ${panelCollapsed ? 'shell--wide' : ''}`}>
+    <div className={`shell ${panelCollapsed ? 'shell--wide' : ''} ${mobile ? 'shell--mobile' : ''}`}>
       <Header onHome={onHome} />
-      <nav className="tabs" aria-label="Sections">
+      <nav className="tabs" aria-label="Sections" ref={tabsRef}>
         {TABS.map((t) => (
           <a key={t.id} href={`#${t.id}`} className={`tab ${tab === t.id ? 'is-active' : ''}`}>
             <span aria-hidden="true">{t.icon}</span> {t.label}
@@ -88,7 +111,7 @@ function Shell({ onHome }) {
       <main className="shell__main">
         {booting ? <Loader /> : <Suspense fallback={<Loader />}><Page /></Suspense>}
       </main>
-      <RunPanel collapsed={panelCollapsed} onToggle={() => setPanelCollapsed((c) => !c)} />
+      <RunPanel mobile={mobile} collapsed={panelCollapsed} onToggle={() => setPanelCollapsed((c) => !c)} />
       <Clock />
       <ScannerFab />
       <ConfirmTradingModal />

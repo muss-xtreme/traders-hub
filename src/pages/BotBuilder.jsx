@@ -32,7 +32,7 @@ export default function BotBuilder() {
       theme: THEME,
       renderer: 'zelos',
       grid: { spacing: 24, length: 2, colour: '#f0dede', snap: true },
-      zoom: { controls: false, wheel: true, startScale: 0.8, maxScale: 2, minScale: 0.3 },
+      zoom: { controls: false, wheel: true, pinch: true, startScale: window.innerWidth <= 640 ? 0.55 : 0.8, maxScale: 2, minScale: 0.3 },
       trashcan: true,
       move: { scrollbars: true, drag: true, wheel: false },
     });

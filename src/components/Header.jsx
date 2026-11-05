@@ -106,7 +106,7 @@ export function Header({ onHome }) {
         ) : (
           <>
             <LoginButtons onToken={() => setTokenOpen(true)} />
-            <a className="btn btn--primary" href="https://deriv.com/signup/" target="_blank" rel="noreferrer">Sign up</a>
+            <a className="btn btn--primary topbar__signup" href="https://deriv.com/signup/" target="_blank" rel="noreferrer">Sign up</a>
           </>
         )}
       </div>

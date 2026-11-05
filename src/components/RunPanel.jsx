@@ -7,7 +7,8 @@ import { ledger } from '../lib/trader.js';
 import { botController } from '../bot/controller.js';
 import { money } from './ui.jsx';
 
-export function RunPanel({ collapsed, onToggle }) {
+// On phones (`mobile`), the panel is a bottom bar that expands into a full-height sheet.
+export function RunPanel({ collapsed, onToggle, mobile = false }) {
   const { account, balance, confirmTrading } = useSession();
   const { transactions, journal, totals, running, lastResult } = useLedger();
   useSyncExternalStore(botController.subscribe, () => botController.isRunning);
@@ -31,6 +32,25 @@ export function RunPanel({ collapsed, onToggle }) {
     ? `Running · ${running.source}${running.symbol ? ` · ${running.symbol}` : ''}`
     : lastResult ? (lastResult === 'win' ? 'Won ✓' : 'Lost ✗') : 'Bot is not running';
 
+  const runButton = botRunning ? (
+    <button type="button" className="run-btn run-btn--stop" onClick={() => botController.stop()}>■ Stop</button>
+  ) : (
+    <button type="button" className="run-btn" onClick={run} disabled={Boolean(running)}>▶ Run</button>
+  );
+  const statusBox = <div className={`run-status ${lastResult ? `is-${lastResult}` : ''} ${running ? 'is-running' : ''}`}>{status}</div>;
+
+  if (collapsed && mobile) {
+    return (
+      <aside className="run-mini">
+        {runButton}
+        {statusBox}
+        <b className={`run-mini__pl ${totals.profit >= 0 ? 'pos' : 'neg'}`}>{money(totals.profit)}</b>
+        <button type="button" className="run-mini__open" onClick={onToggle} aria-label="Open run panel">⌃</button>
+        {error && <p className="error-text tiny run-mini__error">{error}</p>}
+      </aside>
+    );
+  }
+
   if (collapsed) {
     return (
       <aside className="run-panel run-panel--collapsed">
@@ -40,15 +60,11 @@ export function RunPanel({ collapsed, onToggle }) {
   }
 
   return (
-    <aside className="run-panel">
-      <button type="button" className="run-panel__toggle" onClick={onToggle} aria-label="Collapse run panel">»</button>
+    <aside className={`run-panel${mobile ? ' run-panel--sheet' : ''}`}>
+      <button type="button" className="run-panel__toggle" onClick={onToggle} aria-label="Collapse run panel">{mobile ? '⌄' : '»'}</button>
       <div className="run-panel__head">
-        {botRunning ? (
-          <button type="button" className="run-btn run-btn--stop" onClick={() => botController.stop()}>■ Stop</button>
-        ) : (
-          <button type="button" className="run-btn" onClick={run} disabled={Boolean(running)}>▶ Run</button>
-        )}
-        <div className={`run-status ${lastResult ? `is-${lastResult}` : ''} ${running ? 'is-running' : ''}`}>{status}</div>
+        {runButton}
+        {statusBox}
       </div>
       {error && <p className="error-text tiny run-panel__error">{error}</p>}
 

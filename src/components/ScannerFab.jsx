@@ -22,7 +22,9 @@ const clampPos = ({ x, y }) => ({
 function useDraggable() {
   const [pos, setPos] = useState(() => {
     try { const p = JSON.parse(localStorage.getItem(POS_KEY)); if (p) return clampPos(p); } catch { /* default */ }
-    return clampPos({ x: window.innerWidth - 400, y: window.innerHeight - 140 });
+    // Default: bottom-right, clear of the run panel on desktop and the run bar on phones.
+    const phone = window.innerWidth <= 1000;
+    return clampPos({ x: window.innerWidth - SIZE - (phone ? 16 : 320), y: window.innerHeight - SIZE - (phone ? 140 : 60) });
   });
   const drag = useRef(null);
 
