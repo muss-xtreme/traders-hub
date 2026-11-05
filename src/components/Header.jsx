@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useSession } from '../lib/session.jsx';
 import { oauthEnabled, startOAuth } from '../lib/auth.js';
+import { appId, appIdFromEnv, setAppId } from '../lib/deriv.js';
 import { Modal, Field } from './ui.jsx';
 
 export function Brand({ onClick }) {
@@ -17,12 +18,15 @@ export function Brand({ onClick }) {
 export function TokenLoginModal({ onClose }) {
   const { loginWithToken } = useSession();
   const [token, setToken] = useState('');
+  const [app, setApp] = useState(() => appId());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const needsAppId = !appIdFromEnv();
 
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true); setError(null);
+    if (needsAppId) setAppId(app);
     try { await loginWithToken(token); onClose(); } catch (err) { setError(err.message); } finally { setBusy(false); }
   };
 
@@ -33,11 +37,17 @@ export function TokenLoginModal({ onClose }) {
         <Field label="API token">
           <input className="input" autoFocus value={token} onChange={(e) => setToken(e.target.value)} placeholder="Paste your Deriv API token" />
         </Field>
+        {needsAppId && (
+          <Field label="Deriv App ID" hint="Required by Deriv for API-token logins. Saved in this browser only.">
+            <input className="input" value={app} onChange={(e) => setApp(e.target.value)} placeholder="Your app's ID from developers.deriv.com" />
+          </Field>
+        )}
         {error && <p className="error-text">{error}</p>}
-        <button className="btn btn--primary btn--block" disabled={busy || token.trim().length < 10}>
+        <button className="btn btn--primary btn--block" disabled={busy || token.trim().length < 10 || (needsAppId && !app.trim())}>
           {busy ? 'Checking…' : 'Login securely'}
         </button>
         <a className="link" href="https://home.deriv.com/dashboard/api-tokens" target="_blank" rel="noreferrer">Get an API token from Deriv</a>
+        {needsAppId && <a className="link" href="https://developers.deriv.com/" target="_blank" rel="noreferrer">Register an app to get an App ID</a>}
         <p className="tiny muted">The token is stored only in this browser and is sent only to Deriv's API. Nothing is uploaded to any other server.</p>
       </form>
     </Modal>

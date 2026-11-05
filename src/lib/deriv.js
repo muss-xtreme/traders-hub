@@ -5,10 +5,22 @@
 // REST base: https://api.derivws.com/trading/v1/options/  (accounts, accounts/{id}/otp)
 
 const API_BASE = import.meta.env?.VITE_DERIV_API_BASE || 'https://api.derivws.com/trading/v1/';
-const APP_ID = import.meta.env?.VITE_DERIV_APP_ID || '';
+const ENV_APP_ID = import.meta.env?.VITE_DERIV_APP_ID || '';
+const APP_ID_KEY = 'th.derivAppId';
 export const PUBLIC_WS = `${API_BASE.replace(/^https?:\/\//, 'wss://')}options/ws/public`;
 export const OPTIONS_REST = `${API_BASE}options/`;
-export const appId = () => APP_ID;
+
+// Deriv requires a Deriv-App-ID header on REST calls made with a personal access token.
+// Taken from VITE_DERIV_APP_ID, or entered once by the user and kept in this browser.
+export const appId = () => {
+  if (ENV_APP_ID) return ENV_APP_ID;
+  try { return localStorage.getItem(APP_ID_KEY) || ''; } catch { return ''; }
+};
+export const appIdFromEnv = () => Boolean(ENV_APP_ID);
+export const setAppId = (id) => {
+  const v = String(id || '').trim();
+  try { if (v) localStorage.setItem(APP_ID_KEY, v); else localStorage.removeItem(APP_ID_KEY); } catch { /* ignore */ }
+};
 
 export class DerivClient {
   /** @param {() => Promise<string>|string} urlProvider  called on every (re)connect */
@@ -160,9 +172,9 @@ export class DerivClient {
 // ---- REST: accounts + OTP ----------------------------------------------------------------
 
 const headers = (token) => {
-  const h = { Authorization: `Bearer ${token}`, Accept: 'application/json' };
-  if (APP_ID) h['Deriv-App-ID'] = APP_ID;
-  return h;
+  const id = appId();
+  if (!id) throw new Error('A Deriv App ID is required. Register an app at developers.deriv.com and enter its App ID.');
+  return { Authorization: `Bearer ${token}`, 'Deriv-App-ID': id, Accept: 'application/json' };
 };
 
 async function restError(res, fallback) {
