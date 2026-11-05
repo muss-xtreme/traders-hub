@@ -12,7 +12,8 @@ import DCircles from './pages/DCircles.jsx';
 import SpeedLab from './pages/SpeedLab.jsx';
 import BulkTrader from './pages/BulkTrader.jsx';
 import FreeBots from './pages/FreeBots.jsx';
-import { Charts, Tutorials } from './pages/Info.jsx';
+import { Tutorials } from './pages/Info.jsx';
+import Charts from './pages/Charts.jsx';
 
 const BotBuilder = lazy(() => import('./pages/BotBuilder.jsx'));
 

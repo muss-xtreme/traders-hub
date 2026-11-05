@@ -1,12 +1,4 @@
-// Charts (Deriv's public chart app) and Tutorials.
-
-export function Charts() {
-  return (
-    <div className="page page--full">
-      <iframe title="Deriv chart" className="chart-frame" src="https://charts.deriv.com/deriv?hide-signup=true" />
-    </div>
-  );
-}
+// Tutorials.
 
 const GUIDES = [
   ['Log in', 'Use "Log in" (Deriv OAuth) or "API Token Login" with a token that has Read + Trade scopes. Start on a demo account.'],
