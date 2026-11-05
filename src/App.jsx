@@ -14,7 +14,6 @@ import BulkTrader from './pages/BulkTrader.jsx';
 import FreeBots from './pages/FreeBots.jsx';
 import { Tutorials } from './pages/Info.jsx';
 import Charts from './pages/Charts.jsx';
-import ProAnalysis from './pages/ProAnalysis.jsx';
 
 const BotBuilder = lazy(() => import('./pages/BotBuilder.jsx'));
 
@@ -30,7 +29,6 @@ const TABS = [
   { id: 'bot_builder', label: 'Bot Builder', icon: '⚙', Page: BotBuilder },
   { id: 'dcircles', label: 'DCircles', icon: '◎', Page: DCircles },
   { id: 'speed_lab', label: 'Speed Lab', icon: '⚡', Page: SpeedLab },
-  { id: 'pro_analysis', label: 'Pro Analysis', icon: '◆', Page: ProAnalysis },
   { id: 'charts', label: 'Charts', icon: '📈', Page: Charts },
   { id: 'tutorials', label: 'Tutorials', icon: '▷', Page: Tutorials },
 ];

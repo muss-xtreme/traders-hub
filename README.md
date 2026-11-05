@@ -16,7 +16,6 @@ assets are included.
 | **Dashboard** | Import a bot (`.xml` / `.json`), open Bot Builder, or start from a quick strategy |
 | **Bot Builder** | Blockly workspace with trading blocks (trade parameters, purchase, restart conditions, result/stat/analysis blocks); compiled to JS and run against Deriv |
 | **DCircles** | Rolling 1000-tick last-digit distribution, Even/Odd and Over/Under analysis, rise/fall movement, digit stream |
-| **Pro Analysis** | Blue dashboard: live digit probability grid, price/tick stats, true contract odds, chi-square randomness test, one-tap trades — all from real Deriv ticks |
 | **Speed Lab** | Single, Bulk, Hedge, Multi-Market and Even/Odd loops, every-tick mode, martingale with step cap, TP/SL/max-rounds |
 | **AI scanner (floating orb)** | Draggable orb → Smart Scan / Auto Pilot / Deviation Scan. Pulls tick history for every volatility index, scores digit distributions and ranks markets |
 

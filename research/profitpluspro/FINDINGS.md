@@ -20,6 +20,3 @@ REA `analyze_javascript_application` on the app chunks (evidence `ev_5b3429bf410
 
 The server-side `/api/credentials` handler is not shipped to the browser and was not recovered; it only gates the page.
 The site's code and assets are not included in this repository (`research/profitpluspro/` mirror is git-ignored).
-
-Traders Hub's **Pro Analysis** tab reproduces the dashboard layout with real Deriv ticks, true contract odds and a
-chi-square randomness test instead of invented predictions.
