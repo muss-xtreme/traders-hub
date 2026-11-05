@@ -16,6 +16,7 @@ assets are included.
 | **Dashboard** | Import a bot (`.xml` / `.json`), open Bot Builder, or start from a quick strategy |
 | **Bot Builder** | Blockly workspace with trading blocks (trade parameters, purchase, restart conditions, result/stat/analysis blocks); compiled to JS and run against Deriv |
 | **DCircles** | Rolling 1000-tick last-digit distribution, Even/Odd and Over/Under analysis, rise/fall movement, digit stream |
+| **Pro Analysis** | Blue dashboard: live digit probability grid, price/tick stats, true contract odds, chi-square randomness test, one-tap trades — all from real Deriv ticks |
 | **Speed Lab** | Single, Bulk, Hedge, Multi-Market and Even/Odd loops, every-tick mode, martingale with step cap, TP/SL/max-rounds |
 | **AI scanner (floating orb)** | Draggable orb → Smart Scan / Auto Pilot / Deviation Scan. Pulls tick history for every volatility index, scores digit distributions and ranks markets |
 
@@ -56,7 +57,8 @@ src/
   components/       Header, RunPanel, ScannerFab, shared UI
   pages/            Landing, Dashboard, BotBuilder, DCircles, SpeedLab, BulkTrader, FreeBots, Charts/Tutorials
 research/
-  FINDINGS.md       reverse-engineering report (REA evidence IDs, endpoints, algorithms)
+  FINDINGS.md       reverse-engineering report (REA evidence IDs, endpoints, algorithms);
+                    profitpluspro/FINDINGS.md — analysis of a fake "AI predictions" site
   tools/            CDP helper and asset mirror script used during the study
 ```
 
