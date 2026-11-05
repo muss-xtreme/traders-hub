@@ -1,4 +1,4 @@
-// Top bar: brand, account switcher with balance + USD/KES display toggle, login entry points.
+// Top bar: brand, account switcher with balance + USD/UGX display toggle, login entry points.
 
 import { useState } from 'react';
 import { useSession } from '../lib/session.jsx';
@@ -68,7 +68,7 @@ export function LoginButtons({ className = 'btn btn--ghost', onToken }) {
 }
 
 export function Header({ onHome }) {
-  const { account, accounts, balance, switchAccount, logout, displayCurrency, toggleCurrency, formatMoney, authError, tradingStatus } = useSession();
+  const { account, accounts, balance, switchAccount, logout, displayCurrency, toggleCurrency, formatMoney, ugxRate, authError, tradingStatus } = useSession();
   const [tokenOpen, setTokenOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const isDemo = account?.account_type === 'demo';
@@ -97,8 +97,13 @@ export function Header({ onHome }) {
                 ))}
                 <div className="account__row">
                   <span>Display currency</span>
-                  <button type="button" className="pill" onClick={toggleCurrency}>{displayCurrency}</button>
+                  <div className="toggle">
+                    {['USD', 'UGX'].map((c) => (
+                      <button key={c} type="button" className={displayCurrency === c ? 'is-active' : ''} onClick={() => displayCurrency !== c && toggleCurrency()}>{c}</button>
+                    ))}
+                  </div>
                 </div>
+                {displayCurrency === 'UGX' && <p className="tiny muted account__rate">1 USD ≈ {Math.round(ugxRate).toLocaleString('en-UG')} UGX</p>}
                 <button type="button" className="btn btn--ghost btn--block" onClick={logout}>Log out</button>
               </div>
             )}

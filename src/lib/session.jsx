@@ -11,7 +11,13 @@ import { TickBuffer, marketBySymbol, lastDigit } from './markets.js';
 const TOKEN_KEY = 'th.token';
 const ACTIVE_KEY = 'th.activeAccount';
 const CURRENCY_KEY = 'th.displayCurrency';
-const KES_RATE_KEY = 'th.usdKesRate';
+const UGX_RATE_KEY = 'th.usdUgxRate';      // {rate, ts}
+const UGX_FALLBACK = 4068;                  // USD→UGX on 2026-11-05, used until a live rate loads
+const RATE_TTL_MS = 12 * 60 * 60 * 1000;
+
+const readRate = () => {
+  try { const r = JSON.parse(localStorage.getItem(UGX_RATE_KEY)); return r?.rate > 0 ? r : null; } catch { return null; }
+};
 
 const SessionContext = createContext(null);
 
@@ -23,11 +29,25 @@ export function SessionProvider({ children }) {
   const [balance, setBalance] = useState(null);
   const [tradingStatus, setTradingStatus] = useState('idle');
   const [authError, setAuthError] = useState(null);
-  const [displayCurrency, setDisplayCurrency] = useState(() => localStorage.getItem(CURRENCY_KEY) || 'USD');
+  const [displayCurrency, setDisplayCurrency] = useState(() => (localStorage.getItem(CURRENCY_KEY) === 'UGX' ? 'UGX' : 'USD'));
+  const [ugxRate, setUgxRate] = useState(() => readRate()?.rate ?? UGX_FALLBACK);
   const [confirmRequest, setConfirmRequest] = useState(null);
   const confirmedThisSession = useRef(false);
 
   useEffect(() => { deriv.connect(); return deriv.onStatus(setStatus); }, []);
+
+  // Live USD→UGX rate for the display toggle, cached for 12 hours.
+  useEffect(() => {
+    const cached = readRate();
+    if (cached && Date.now() - cached.ts < RATE_TTL_MS) return;
+    fetch('https://open.er-api.com/v6/latest/USD')
+      .then((r) => r.json())
+      .then((j) => {
+        const rate = Number(j?.rates?.UGX);
+        if (rate > 0) { localStorage.setItem(UGX_RATE_KEY, JSON.stringify({ rate, ts: Date.now() })); setUgxRate(rate); }
+      })
+      .catch(() => { /* keep cached / fallback rate */ });
+  }, []);
 
   // Finish an OAuth redirect if we are returning from auth.deriv.com.
   useEffect(() => {
@@ -86,14 +106,15 @@ export function SessionProvider({ children }) {
   }, []);
 
   const toggleCurrency = useCallback(() => {
-    setDisplayCurrency((c) => { const n = c === 'USD' ? 'KES' : 'USD'; localStorage.setItem(CURRENCY_KEY, n); return n; });
+    setDisplayCurrency((c) => { const n = c === 'USD' ? 'UGX' : 'USD'; localStorage.setItem(CURRENCY_KEY, n); return n; });
   }, []);
 
   const formatMoney = useCallback((usd) => {
-    const rate = Number(localStorage.getItem(KES_RATE_KEY)) || 129;
-    const v = displayCurrency === 'KES' ? usd * rate : usd;
-    return `${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${displayCurrency}`;
-  }, [displayCurrency]);
+    if (displayCurrency === 'UGX') {
+      return `${Math.round(usd * ugxRate).toLocaleString('en-UG')} UGX`;
+    }
+    return `${usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
+  }, [displayCurrency, ugxRate]);
 
   /**
    * Every trading start goes through here. The first start per session on a demo account — and
@@ -116,9 +137,9 @@ export function SessionProvider({ children }) {
   const value = useMemo(() => ({
     status, tradingStatus, accounts, account, balance, authError,
     loginWithToken, switchAccount, logout,
-    displayCurrency, toggleCurrency, formatMoney,
+    displayCurrency, toggleCurrency, formatMoney, ugxRate,
     confirmTrading, confirmRequest,
-  }), [status, tradingStatus, accounts, account, balance, authError, loginWithToken, switchAccount, logout,
+  }), [ugxRate, status, tradingStatus, accounts, account, balance, authError, loginWithToken, switchAccount, logout,
     displayCurrency, toggleCurrency, formatMoney, confirmTrading, confirmRequest]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
